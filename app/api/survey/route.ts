@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     // Guardamos en Redis (esto SI funciona en Vercel)
     await kv.set('responses', responsesData);
 
-    return NextResponse.json({ success: true, message: "Response saved to KV" });
+    return NextResponse.json({ success: true, message: "Response KABOOM! to KV" });
   } catch (error) {
     console.error("Survey API Error:", error);
     return NextResponse.json({ error: "Failed to save survey response" }, { status: 500 });
