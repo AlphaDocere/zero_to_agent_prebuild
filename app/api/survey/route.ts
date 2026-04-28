@@ -25,8 +25,17 @@ export async function POST(request: Request) {
     await kv.set('responses', responsesData);
 
     return NextResponse.json({ success: true, message: "Response KABOOM! to KV" });
-  } catch (error) {
+  // } catch (error) {
+  //   console.error("Survey API Error:", error);
+  //   return NextResponse.json({ error: "Failed to save survey response" }, { status: 500 });
+  // }
+
+  } catch (error: any) {
     console.error("Survey API Error:", error);
-    return NextResponse.json({ error: "Failed to save survey response" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to save survey response",
+      message: error.message, // <--- Esto te dirá el error real en el navegador
+      stack: error.stack      // <--- Esto te dirá en qué línea exacta falló
+    }, { status: 500 });
   }
 }
