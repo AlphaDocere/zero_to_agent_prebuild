@@ -112,7 +112,7 @@ export function SurveyForm({ userResult, email: initialEmail, onComplete }: Surv
             <p className="text-muted-foreground mb-6">{t.readyToEnter}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button asChild className="bg-emerald-500 hover:bg-emerald-600 text-white">
-                <a href="https://chat.whatsapp.com/your-group-link" target="_blank" rel="noopener noreferrer">
+                <a href="https://chat.whatsapp.com/CmHTWuI9Yp8DWZ6IeZnpeK" target="_blank" rel="noopener noreferrer">
                   {t.joinWhatsApp}
                 </a>
               </Button>
