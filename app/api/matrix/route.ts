@@ -1,52 +1,35 @@
-// app/api/matrix/route.ts
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import Redis from 'ioredis';
 
-const levelMap: Record<number, string> = {
-  1: 'Curious',
-  2: 'Explorer',
-  3: 'Builder',
-  4: 'Operator',
-  5: 'Architect'
-};
+const redis = new Redis(process.env.seed_REDIS_URL as string);
 
 export async function GET() {
   try {
-    // Definimos las rutas a los archivos
-   const participantsPath = path.join(process.cwd(), 'data', 'participants.json');
-    const responsesPath = path.join(process.cwd(), 'data', 'responses.json');
-    // Intentamos leer los archivos
-    const participantsData = JSON.parse(await fs.readFile(participantsPath, 'utf8'));
-    const responsesData = JSON.parse(await fs.readFile(responsesPath, 'utf8'));
+    const raw = await redis.get('responses');
+    const data = raw ? JSON.parse(raw) : [];
 
-    const enriched = participantsData.map((p: any) => {
-      const resp = responsesData.find((r: any) => r.email.toLowerCase() === p.email.toLowerCase());
-      const level = resp?.selected_level ? levelMap[resp.selected_level] : 'Curious';
-      return { ...p, ...resp, level, hasSurvey: !!resp };
-    });
+    // Mapeamos los datos para asegurar que el frontend los entienda
+    const participants = data.map((p: any) => ({
+      ...p,
+      // Forzamos hasSurvey a true si existe el objeto, 
+      // o usa la lógica: p.build_goal ? true : false
+      hasSurvey: p.hasSurvey ?? true, 
+      name: p.name || "Sin Nombre",
+      level: p.level || "Curious",
+      company: p.company || "Independiente",
+      build_goal: p.build_goal || "Sin objetivo definido aún.",
+      confidence: p.confidence || 0,
+      needs_team: p.needs_team || "No"
+    }));
 
     const stats = {
-      total: participantsData.length,
-      withSurvey: responsesData.length,
-      needsTeam: responsesData.filter((r: any) => r.needs_team === 'Yes').length,
+      total: participants.length,
+      withSurvey: participants.filter((p: any) => p.hasSurvey).length,
+      needsTeam: participants.filter((p: any) => p.needs_team === 'Yes').length,
     };
 
-    return NextResponse.json({ stats, participants: enriched });
-
+    return NextResponse.json({ participants, stats });
   } catch (error) {
-    // ESTA ES LA PARTE QUE BUSCABAS:
-    console.error("Error crítico en API Matrix:", error);
-    
-    // Devolvemos una estructura válida aunque esté vacía
-    // para que el Frontend no se rompa al intentar leer .total o .filter()
-    return NextResponse.json({ 
-      stats: { 
-        total: 0, 
-        withSurvey: 0, 
-        needsTeam: 0 
-      }, 
-      participants: [] 
-    });
+    return NextResponse.json({ error: "Error de lectura" }, { status: 500 });
   }
 }

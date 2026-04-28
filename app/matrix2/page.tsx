@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, Mail, Zap, UserPlus, Star, Info, ShieldCheck } from 'lucide-react'
+import { Search, ShieldCheck } from 'lucide-react'
 
 const levelColors: Record<string, string> = {
   Explorer: 'bg-emerald-500 text-white',
@@ -21,7 +21,6 @@ export default function TalentMatrixPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeLevel, setActiveLevel] = useState('All')
   
-  // --- SEGURIDAD: Máscara ZeroToAgent ---
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [passInput, setPassInput] = useState('')
   const [authError, setAuthError] = useState(false)
@@ -68,7 +67,6 @@ export default function TalentMatrixPage() {
     })
   }, [data, searchTerm, activeLevel])
 
-  // --- VISTA DE LOGIN (MÁSCARA) ---
   if (!isAuthorized) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
@@ -129,7 +127,7 @@ export default function TalentMatrixPage() {
           </div>
         </div>
 
-        {/* Filtros y Buscador */}
+        {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
@@ -155,49 +153,57 @@ export default function TalentMatrixPage() {
           </div>
         </div>
 
-        {/* Listado */}
+        {/* Listado de Tarjetas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((p: any) => (
-            <Card key={p.email} className="bg-slate-900/50 border-slate-800 hover:border-indigo-500/50 transition-all group overflow-hidden">
-              <div className={`h-1 w-full ${levelColors[p.level] || 'bg-slate-500'}`} />
-              <CardContent className="p-6 space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-white text-lg leading-tight group-hover:text-indigo-400 transition-colors">
-                      {p.name}
-                    </h3>
-                    <p className="text-xs text-slate-500 font-medium tracking-wide uppercase mt-1">
-                      {p.company || 'Independiente'}
-                    </p>
-                  </div>
-                  <Badge className={`${levelColors[p.level] || 'bg-slate-500'} border-none`}>{p.level}</Badge>
-                </div>
+          {filtered.map((p: any) => {
+            // Lógica para definir el color según el nivel o fallback a Curious
+            const colorClass = levelColors[p.level] || levelColors["Curious"];
 
-                {p.hasSurvey ? (
-                  <div className="space-y-3">
-                    <div className="bg-black/50 p-3 rounded-lg border border-slate-800/50">
-                      <p className="text-sm text-slate-300 italic line-clamp-2">"{p.build_goal}"</p>
+            return (
+              <Card key={p.email} className="bg-slate-900/50 border-slate-800 hover:border-indigo-500/50 transition-all group overflow-hidden">
+                <div className={`h-1 w-full ${colorClass}`} />
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-white text-lg leading-tight group-hover:text-indigo-400 transition-colors">
+                        {p.name || 'Participante'}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium tracking-wide uppercase mt-1">
+                        {p.company || 'Independiente'}
+                      </p>
                     </div>
-                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase">
-                      <span>{p.needs_team === 'Yes' ? '⚠️ Busca Equipo' : '✅ Equipo Ok'}</span>
-                      <span className="text-indigo-400 text-sm">★ {p.confidence}/10</span>
-                    </div>
+                    <Badge className={`${colorClass} border-none`}>{p.level || 'Curious'}</Badge>
                   </div>
-                ) : (
-                  <div className="py-6 text-center border border-dashed border-slate-800 rounded-lg opacity-40">
-                    <p className="text-[10px] font-bold">SIN DATOS DE ENCUESTA</p>
-                  </div>
-                )}
 
-                <div className="flex gap-2">
-                  <Button variant="secondary" className="flex-1 text-xs h-9" asChild>
-                    <a href={`mailto:${p.email}`}>Mail</a>
-                  </Button>
-                  <Button variant="outline" className="flex-1 text-xs h-9 border-slate-700">Perfil</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {/* Mostramos contenido si tiene el flag hasSurvey O si tiene un build_goal escrito */}
+                  {p.hasSurvey || p.build_goal ? (
+                    <div className="space-y-3">
+                      <div className="bg-black/50 p-3 rounded-lg border border-slate-800/50">
+                        <p className="text-sm text-slate-300 italic line-clamp-2">
+                          "{p.build_goal || 'Sin objetivo definido'}"
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase">
+                        <span>{p.needs_team === 'Yes' ? '⚠️ Busca Equipo' : '✅ Equipo Ok'}</span>
+                        <span className="text-indigo-400 text-sm">★ {p.confidence || 0}/10</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center border border-dashed border-slate-800 rounded-lg opacity-40">
+                      <p className="text-[10px] font-bold">SIN DATOS DE ENCUESTA</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button variant="secondary" className="flex-1 text-xs h-9" asChild>
+                      <a href={`mailto:${p.email}`}>Mail</a>
+                    </Button>
+                    <Button variant="outline" className="flex-1 text-xs h-9 border-slate-700">Perfil</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </main>

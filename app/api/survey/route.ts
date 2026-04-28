@@ -1,6 +1,21 @@
 import { NextResponse } from 'next/server';
 import Redis from 'ioredis';
 
+
+
+export async function GET() {
+  try {
+    const rawData = await redis.get('responses');
+    // Si usas ioredis, recuerda hacer JSON.parse(rawData)
+    const responses = typeof rawData === 'string' ? JSON.parse(rawData) : (rawData || []);
+
+    return NextResponse.json(responses);
+  } catch (error) {
+    return NextResponse.json({ error: "Error al leer tablero" }, { status: 500 });
+  }
+}
+
+
 // ioredis sí entiende el protocolo "redis://"
 const redis = new Redis(process.env.seed_REDIS_URL as string);
 
