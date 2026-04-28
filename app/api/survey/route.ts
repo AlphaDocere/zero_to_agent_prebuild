@@ -1,56 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { saveResponse, getResponses } from '@/lib/data'
-import type { SurveyResponse } from '@/lib/types'
+import { NextResponse } from 'next/server';
+import Redis from 'ioredis';
 
-export async function POST(request: NextRequest) {
+// ioredis sí entiende el protocolo "redis://"
+const redis = new Redis(process.env.seed_REDIS_URL as string);
+
+export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    const newResponse = await request.json();
 
-    // Validación básica: El email es el identificador único
-    if (!body.email || typeof body.email !== 'string') {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    // Obtener datos
+    const rawData = await redis.get('responses');
+    let responsesData = rawData ? JSON.parse(rawData) : [];
+
+    // Lógica de guardado...
+    const index = responsesData.findIndex((r: any) => r.email === newResponse.email);
+    if (index !== -1) {
+      responsesData[index] = { ...responsesData[index], ...newResponse };
+    } else {
+      responsesData.push(newResponse);
     }
 
-    /**
-     * Usamos el spread operator (...body) para capturar dinámicamente 
-     * todos los campos enviados desde SurveyForm.tsx (Explorer, Builder, Architect, etc.)
-     * sin necesidad de definirlos uno por uno aquí.
-     */
-    const response: SurveyResponse = {
-      ...body,
-      email: body.email.toLowerCase().trim(), // Normalizamos el email
-      submitted_at: new Date().toISOString(),
-    }
+    // Guardar (en ioredis hay que convertir a string)
+    await redis.set('responses', JSON.stringify(responsesData));
 
-    // Guardamos en data/responses.json a través de la librería de datos
-    await saveResponse(response)
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Survey response saved successfully',
-      data: response // Devolvemos lo guardado para confirmación en consola
-    })
-  } catch (error) {
-    console.error('Survey submission error:', error)
-    return NextResponse.json(
-      { error: 'Failed to save survey response', details: String(error) }, 
-      { status: 500 }
-    )
-  }
-}
-
-export async function GET() {
-  try {
-    const responses = await getResponses()
-    return NextResponse.json({ 
-      responses, 
-      count: responses.length 
-    })
-  } catch (error) {
-    console.error('Get responses error:', error)
-    return NextResponse.json(
-      { error: 'Failed to get responses', details: String(error) }, 
-      { status: 500 }
-    )
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
